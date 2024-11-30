@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Collaboration Tool</title>
+    <style>
+        #editor {
+            width: 100%;
+            height: 60vh;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            overflow: auto;
+        }
+
+        #clients {
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 15vh;
+            overflow-y: auto;
+        }
+
+        #username-indicator {
+            margin: 10px 0;
+            font-weight: bold;
+            color: blue;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Real-Time Collaboration Tool</h1>
+    <div id="username-indicator"></div>
+    <textarea id="editor"></textarea>
+    <h3>Connected Clients</h3>
+    <div id="clients"></div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        const editor = document.getElementById('editor');
+        const clientsDiv = document.getElementById('clients');
+        const usernameIndicator = document.getElementById('username-indicator');
+
+        let username = ""; // To store the username locally
+
+        // When server requests the client's name
+        socket.on('request_name', () => {
+            username = prompt('Enter your name:'); // Ask for username
+            socket.emit('register_name', { name: username }); // Send username to server
+            usernameIndicator.textContent = `You are signed in as: ${username}`; // Update UI
+        });
+
+        // Update the list of connected clients
+        socket.on('update_client_list', (clientNames) => {
+            clientsDiv.innerHTML = ""; // Clear the list
+            clientNames.forEach(name => {
+                const clientElement = document.createElement('div');
+                clientElement.textContent = name;
+                clientsDiv.appendChild(clientElement);
+            });
+        });
+
+        // Listen for updates to the document
+        socket.on('update_document', (receivedContent) => {
+            editor.value = receivedContent;
+        });
+
+        // Send edits to the server
+        editor.addEventListener('input', () => {
+            const content = editor.value;
+            socket.emit('edit', { content });
+        });
+    </script>
+</body>
+
+</html>
